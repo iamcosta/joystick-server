@@ -1,0 +1,5 @@
+[project]
+name = "joystick-server"
+version = "0.1.0"
+description = "Joystick Server"
+dependencies = [evdev]
