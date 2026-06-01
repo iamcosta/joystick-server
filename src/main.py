@@ -77,9 +77,6 @@ def joystick_control(server: socket):
                 if "Xbox Back" in recv_input:
                     btn_select = not btn_select
                     ui.write(e.EV_KEY, e.BTN_SELECT, 1 if btn_select else 0)
-                if "Xbox Back" in recv_input:
-                    btn_mode = not btn_mode
-                    ui.write(e.EV_KEY, e.BTN_MODE, 1 if btn_mode else 0)
 
                 # Actions
                 if "Top Action" in recv_input:
