@@ -1,79 +1,49 @@
 import socket
-import time
-from evdev import UInput, ecodes as e, AbsInfo
+from evdev import UInput, ecodes as e
 
 HOST = "192.168.100.8"
-PORT = 65432
-
-# Define which capabilities the virtual joystick will have
-cap = {
-    # 1. BOTÕES DIGITAIS (Chaves do tipo EV_KEY)
-    e.EV_KEY: [
-        e.BTN_A,           # Botão A
-        e.BTN_B,           # Botão B
-        e.BTN_X,           # Botão X
-        e.BTN_Y,           # Botão Y
-        e.BTN_TL,          # Botão de ombro esquerdo (LB)
-        e.BTN_TR,          # Botão de ombro direito (RB)
-        e.BTN_SELECT,      # Botão View/Back
-        e.BTN_START,       # Botão Menu/Start
-        e.BTN_THUMBL,      # Clique do analógico esquerdo (LS/L3)
-        e.BTN_THUMBR,      # Clique do analógico direito (RS/R3)
-        e.BTN_DPAD_UP,
-        e.BTN_DPAD_RIGHT,
-        e.BTN_DPAD_DOWN,
-        e.BTN_DPAD_LEFT
-    ],
-    
-    # 2. EIXOS ANALÓGICOS E D-PAD (Absolutos do tipo EV_ABS)
-    # Formato dos parâmetros: AbsInfo(value, min, max, fuzz, flat, resolution)
-    e.EV_ABS: [
-        e.ABS_X,
-        e.ABS_Y,
-        e.ABS_Z,
-        e.ABS_RX,
-        e.ABS_RY,
-        e.ABS_RZ,
-    ]
+DEFAULT_PORT = 65432
+JS_BTN = [
+    e.BTN_SOUTH,   # Botão A
+    e.BTN_EAST,    # Botão B
+    e.BTN_NORTH,   # Botão X
+    e.BTN_WEST,    # Botão Y
+    e.BTN_TL,      # Shoulder Esquerdo (LB)
+    e.BTN_TR,      # Shoulder Direito (RB)
+    e.BTN_SELECT,  # Botão Back / View
+    e.BTN_START,   # Botão Start / Menu
+    e.BTN_MODE,    # Botão Logo Xbox (Home)
+    e.BTN_THUMBL,  # Clique no Analógico Esquerdo (LS)
+    e.BTN_THUMBR,  # Clique no Analógico Direito (RS)
+    e.BTN_MODE,    # Botão Logo Xbox (Home)
+]
+JS_AXIS = {
+    e.ABS_X: (0, -32768, 32767, 16, 128),      # Analógico Esquerdo - Horizontal
+    e.ABS_Y: (0, -32768, 32767, 16, 128),      # Analógico Esquerdo - Vertical
+    e.ABS_RX: (0, -32768, 32767, 16, 128),     # Analógico Direito - Horizontal
+    e.ABS_RY: (0, -32768, 32767, 16, 128),     # Analógico Direito - Vertical
+    e.ABS_Z: (0, 0, 1023, 4, 16, 16),               # Gatilho Esquerdo (LT)
+    e.ABS_RZ: (0, 0, 1023, 4, 16, 16),              # Gatilho Direito (RT)
+    e.ABS_HAT0X: (0, -1, 1),                   # D-Pad - Horizontal (Esquerda/Direita)
+    e.ABS_HAT0Y: (0, -1, 1),                   # D-Pad - Vertical (Cima/Baixo)
 }
 
-def run_app():
-    # Create and configure the UDP socket
+def create_server(host: str = HOST, port: int = DEFAULT_PORT) -> socket:
     server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server.bind((HOST, PORT))
+    try:
+        server.bind((host, port))
+        print(f"Server succesfully started on {HOST}:{DEFAULT_PORT}")
+        return server
+    except:
+        print("Failed to start server")
+        raise Exception("Failed to start server")
 
-    print(f"UDP Server listening on {HOST}:{PORT}...")
-
-    # 1. Definir os botões (EV_KEY) do controle Xbox
-    botoes_xbox = [
-        e.BTN_SOUTH,   # Botão A
-        e.BTN_EAST,    # Botão B
-        e.BTN_NORTH,   # Botão X
-        e.BTN_WEST,    # Botão Y
-        e.BTN_TL,      # Shoulder Esquerdo (LB)
-        e.BTN_TR,      # Shoulder Direito (RB)
-        e.BTN_SELECT,  # Botão Back / View
-        e.BTN_START,   # Botão Start / Menu
-        e.BTN_MODE,    # Botão Logo Xbox (Home)
-        e.BTN_THUMBL,  # Clique no Analógico Esquerdo (LS)
-        e.BTN_THUMBR,  # Clique no Analógico Direito (RS)
-        e.BTN_MODE,    # Botão Logo Xbox (Home)
-    ]
-
-    # 2. Definir os eixos analógicos e D-Pad (EV_ABS)
-    # Formato: código: (valor_inicial, valor_min, valor_max, fuzz, flat)
-    eixos_xbox = {
-        e.ABS_X: (0, -32768, 32767, 16, 128),      # Analógico Esquerdo - Horizontal
-        e.ABS_Y: (0, -32768, 32767, 16, 128),      # Analógico Esquerdo - Vertical
-        e.ABS_RX: (0, -32768, 32767, 16, 128),     # Analógico Direito - Horizontal
-        e.ABS_RY: (0, -32768, 32767, 16, 128),     # Analógico Direito - Vertical
-        e.ABS_Z: (0, 0, 1023, 4, 16, 16),               # Gatilho Esquerdo (LT)
-        e.ABS_RZ: (0, 0, 1023, 4, 16, 16),              # Gatilho Direito (RT)
-        e.ABS_HAT0X: (0, -1, 1),                   # D-Pad - Horizontal (Esquerda/Direita)
-        e.ABS_HAT0Y: (0, -1, 1),                   # D-Pad - Vertical (Cima/Baixo)
-    }
-
-    with UInput(events={e.EV_KEY: botoes_xbox, e.EV_ABS: eixos_xbox}, name="Microsoft X-Box 360", vendor=0x045e, product=0x028e, version=0x0110) as ui:
+def close_server(server: socket):
+    server.close()
+    print("Server closed")
+    
+def joystick_control(server: socket):
+    with UInput(events={e.EV_KEY: JS_BTN, e.EV_ABS: JS_AXIS}, name="Microsoft X-Box 360", vendor=0x045e, product=0x028e, version=0x0110) as ui:
         # Actions
         btn_a = False 
         btn_b = False
@@ -142,10 +112,10 @@ def run_app():
                 # Shoulders
                 if "Right Shoulder" in recv_input:
                     btn_tl = not btn_tl
-                    ui.write(e.EV_KEY, e.BTN_TL, 1 if btn_tl else 0)
+                    ui.write(e.EV_KEY, e.BTN_TR, 1 if btn_tl else 0)
                 if "Left Shoulder" in recv_input:
                     btn_tr = not btn_tr
-                    ui.write(e.EV_KEY, e.BTN_TR, 1 if btn_tr else 0)
+                    ui.write(e.EV_KEY, e.BTN_TL, 1 if btn_tr else 0)
                 
                 # Stickers
                 if "Xbox L/LS" in recv_input:
@@ -188,6 +158,11 @@ def run_app():
             print("\nServer shutting down.")
         finally:
             server.close()
+
+def run_app():
+    server = create_server()
+    joystick_control(server)
+        
 
 if __name__ == "__main__":
     run_app()
