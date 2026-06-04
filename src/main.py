@@ -44,113 +44,18 @@ def close_server(server: socket):
     
 def joystick_control(server: socket):
     with UInput(events={e.EV_KEY: JS_BTN, e.EV_ABS: JS_AXIS}, name="Microsoft X-Box 360", vendor=0x045e, product=0x028e, version=0x0110) as ui:
-        # Actions
-        btn_a = False 
-        btn_b = False
-        btn_x = False
-        btn_y = False
-        # DPad 
-        btn_dpap_up = False
-        btn_dpap_right = False
-        btn_dpap_down = False
-        btn_dpap_left = False
-        # Shoulders
-        btn_tl = False # LB
-        btn_tr = False # RB
-        # Special
-        btn_select = False # View/Back
-        btn_start = False # Menu
-        btn_mode = False
-        # Stickers
-        btn_thumbl = False # LS/L3
-        btn_thumbr = False # RS/R3
         try:
             while True:
                 # Receive explicit packets and sender properties
                 data, addr = server.recvfrom(1024)
-                recv_input = data.decode('utf-8')
-
-                # Special
-                if "Xbox Menu" in recv_input:
-                    btn_start = not btn_start
-                    ui.write(e.EV_KEY, e.BTN_START, 1 if btn_start else 0)
-                if "Xbox Back" in recv_input:
-                    btn_select = not btn_select
-                    ui.write(e.EV_KEY, e.BTN_SELECT, 1 if btn_select else 0)
-
-                # Actions
-                if "Top Action" in recv_input:
-                    btn_y = not btn_y
-                    ui.write(e.EV_KEY, e.BTN_Y, 1 if btn_y else 0)
-                if "Right Action" in recv_input:
-                    btn_b = not btn_b
-                    ui.write(e.EV_KEY, e.BTN_B, 1 if btn_b else 0)
-                if "Bottom Action" in recv_input:
-                    btn_a = not btn_a
-                    ui.write(e.EV_KEY, e.BTN_A, 1 if btn_a else 0)
-                if "Left Action" in recv_input:
-                    btn_x = not btn_x
-                    ui.write(e.EV_KEY, e.BTN_X, 1 if btn_x else 0)
-
-                # D Pad
-                if "D-pad Up" in recv_input:
-                    btn_dpap_up = not btn_dpap_up
-                    ui.write(e.EV_ABS, e.ABS_HAT0Y, -1 if btn_dpap_up else 0)
-                if "D-pad Right" in recv_input:
-                    btn_dpap_right = not btn_dpap_right
-                    ui.write(e.EV_ABS, e.ABS_HAT0X, 1 if btn_dpap_right else 0)
-                if "D-pad Down" in recv_input:
-                    btn_dpap_down = not btn_dpap_down
-                    ui.write(e.EV_ABS, e.ABS_HAT0Y, 1 if btn_dpap_down else 0)
-                if "D-pad Left" in recv_input:
-                    btn_dpap_left = not btn_dpap_left
-                    ui.write(e.EV_ABS, e.ABS_HAT0X, -1 if btn_dpap_left else 0)
-
-                # Shoulders
-                if "Right Shoulder" in recv_input:
-                    btn_tl = not btn_tl
-                    ui.write(e.EV_KEY, e.BTN_TR, 1 if btn_tl else 0)
-                if "Left Shoulder" in recv_input:
-                    btn_tr = not btn_tr
-                    ui.write(e.EV_KEY, e.BTN_TL, 1 if btn_tr else 0)
-                
-                # Stickers
-                if "Xbox L/LS" in recv_input:
-                    btn_thumbl = not btn_thumbl
-                    ui.write(e.EV_KEY, e.BTN_THUMBL, 1 if btn_thumbl else 0)
-                if "Xbox R/RS" in recv_input:
-                    btn_thumbr = not btn_thumbr
-                    ui.write(e.EV_KEY, e.BTN_THUMBR, 1 if btn_thumbr else 0)
-
-                # Triggers
-                if "Left Trigger" in recv_input:
-                    value = float(recv_input.split("Value")[1])
-                    final_value = int(float(1023) * value)
-                    ui.write(e.EV_ABS, e.ABS_RZ, final_value)
-                if "Right Trigger" in recv_input:
-                    value = float(recv_input.split("Value")[1])
-                    final_value = int(float(1023) * value)
-                    ui.write(e.EV_ABS, e.ABS_Z, final_value)
-
-                # Analog
-                if "Left Stick X-Axis" in recv_input:
-                    value = float(recv_input.split("Value")[1])
-                    final_value = int(float(32767) * value)
-                    ui.write(e.EV_ABS, e.ABS_X, final_value)
-                if "Left Stick Y-Axis" in recv_input:
-                    value = float(recv_input.split("Value")[1])
-                    final_value = int(float(32767) * value)
-                    ui.write(e.EV_ABS, e.ABS_Y, final_value)
-                if "Right Stick X-Axis" in recv_input:
-                    value = float(recv_input.split("Value")[1])
-                    final_value = int(float(32767) * value)
-                    ui.write(e.EV_ABS, e.ABS_RX, final_value)
-                if "Right Stick Y-Axis" in recv_input:
-                    value = float(recv_input.split("Value")[1])
-                    final_value = int(float(32767) * value)
-                    ui.write(e.EV_ABS, e.ABS_RY, final_value)
-                
-                ui.syn()
+                recv_input: str = data.decode('utf-8')
+                if ":" in recv_input:
+                    data_members = recv_input.split(":")
+                    if data_members[0] == "BTN":
+                        ui.write(e.EV_KEY, int(data_members[1]), int(data_members[2]))
+                    if data_members[0] == "AXIS":
+                        ui.write(e.EV_ABS, int(data_members[1]), int(float(data_members[2])))
+                    ui.syn()
         except KeyboardInterrupt:
             print("\nServer shutting down.")
         finally:
