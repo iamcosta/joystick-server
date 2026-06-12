@@ -79,7 +79,7 @@ def joystick_control(server: socket):
                     axisLX = float(data_members[2]) / 32767
                 if data_members[1] == "1":
                     global axisLY
-                    axisLY = float(data_members[2]) / 32767
+                    axisLY = float(data_members[2]) / -32767
                 if data_members[1] == "3":
                     global axisRX
                     axisRX = float(data_members[2]) / 32767
