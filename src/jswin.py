@@ -223,6 +223,28 @@ class JoystickServerApp(tk.Tk):
         inner = tk.Frame(card, bg=C["surface"], padx=22, pady=22)
         inner.pack(fill="x")
 
+        # host IP row
+        tk.Label(inner, text="HOST IP",
+                 font=("Segoe UI", 8, "bold"),
+                 fg=C["text2"], bg=C["surface"]).pack(anchor="w", pady=(0, 4))
+
+        ip_frame = tk.Frame(inner, bg=C["entry_bg"],
+                            highlightbackground=C["border"], highlightthickness=1)
+        ip_frame.pack(fill="x", pady=(0, 16))
+
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            host_ip = s.getsockname()[0]
+            s.close()
+        except Exception:
+            host_ip = "Unavailable"
+
+        tk.Label(ip_frame, text=host_ip,
+                 font=("Consolas", 13, "bold"),
+                 fg=C["accent2"], bg=C["entry_bg"],
+                 bd=8, relief="flat", justify="center").pack(fill="x")
+
         # port label row
         port_hdr = tk.Frame(inner, bg=C["surface"])
         port_hdr.pack(fill="x", pady=(0, 4))
